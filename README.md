@@ -32,7 +32,3 @@ the install script downloads only essential files from concord dev branch and co
 - `/ping` - test bot response
 - `/info` - bot information
 - `/help` - list all commands
-
-## vps deployment
-
-see `scripts/setup.txt` for full vps setup instructions
