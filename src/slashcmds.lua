@@ -50,7 +50,7 @@ slashcmds.list = {
             table.insert(results, string.format("**memory:** %.1fKB", mem))
             table.insert(results, "")
             table.insert(results, "**comparison (100k loop avg):**")
-            table.insert(results, " LuaJIT: ~0.5ms ⚡")
+            table.insert(results, " LuaJIT: ~0.5ms")
             table.insert(results, " C/Rust: ~0.8ms")
             table.insert(results, " Go: ~2ms")
             table.insert(results, " Node.js: ~5ms")
@@ -67,15 +67,37 @@ slashcmds.list = {
 
 function slashcmds.register(discord, client, guild_id)
     for name, cmd in pairs(slashcmds.list) do
+        print("[slash] registering: /" .. name)
         discord.create_slash_command(client, guild_id, name, cmd.description)
     end
 end
 
 function slashcmds.handle(discord, client, interaction)
-    local data = ffi.cast("struct discord_interaction_data*", interaction.data)
-    if not data then return end
+    print("[slash] interaction received, type: " .. tostring(interaction.type))
     
-    local cmdname = ffi.string(data.name)
+    if interaction.data == nil then
+        print("[slash] interaction.data is nil")
+        return
+    end
+    
+    local data = ffi.cast("struct discord_interaction_data*", interaction.data)
+    if data == nil then
+        print("[slash] cast failed")
+        return
+    end
+    
+    if data.name == nil then
+        print("[slash] data.name is nil")
+        return
+    end
+    
+    local ok, cmdname = pcall(ffi.string, data.name)
+    if not ok then
+        print("[slash] failed to get command name: " .. tostring(cmdname))
+        return
+    end
+    
+    print("[slash] command: " .. cmdname)
     local cmd = slashcmds.list[cmdname]
     
     if cmd and cmd.handler then
