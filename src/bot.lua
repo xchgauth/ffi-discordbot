@@ -27,20 +27,17 @@ local function on_ready(bot_client, event)
 end
 
 local function on_message(bot_client, message)
-    if message == nil then print("[debug] message is nil") return end
-    if message.author == nil then print("[debug] author is nil") return end
+    if message == nil then return end
+    if message.author == nil then return end
     if message.author.bot then return end
-    if message.content == nil then print("[debug] content is nil") return end
+    if message.content == nil then return end
     
     local ok, content = pcall(ffi.string, message.content)
-    if not ok then print("[debug] failed to get content: " .. tostring(content)) return end
-    
-    print("[debug] received: " .. content)
+    if not ok then return end
     
     if content:sub(1, #config.prefix) == config.prefix then
         local cmdname = content:sub(#config.prefix + 1):match("^%S+")
         if cmdname then
-            print("[debug] running command: " .. cmdname)
             local args = content:sub(#config.prefix + #cmdname + 2)
             commands.handle(discord, bot_client, message, cmdname, args)
         end
