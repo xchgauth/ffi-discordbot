@@ -1,6 +1,6 @@
 # ffi discord bot
 
-minimal discord bot using luajit ffi bindings to concord c library
+a minimal discord bot using luajit ffi bindings to concord c library
 
 ## structure
 
