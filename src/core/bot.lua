@@ -4,64 +4,60 @@ local config = require("init.config")
 local commands = require("core.commands")
 local slashcmds = require("core.slashcmds")
 
+local ffi_string, ffi_cast = ffi.string, ffi.cast
+local tonumber, print, format = tonumber, print, string.format
+local sub, match = string.sub, string.match
+
 local client = discord.init(config.token)
 local guild_id = tonumber(os.getenv("GUILD_ID")) or 0
+local prefix = config.prefix
+local prefix_len = #prefix
 
-discord.add_intents(client, discord.INTENTS.GUILDS)
-discord.add_intents(client, discord.INTENTS.GUILD_MESSAGES)
-discord.add_intents(client, discord.INTENTS.MESSAGE_CONTENT)
-discord.add_intents(client, discord.INTENTS.DIRECT_MESSAGES)
+local INTENTS = discord.INTENTS
+discord.add_intents(client, INTENTS.GUILDS)
+discord.add_intents(client, INTENTS.GUILD_MESSAGES)
+discord.add_intents(client, INTENTS.MESSAGE_CONTENT)
+discord.add_intents(client, INTENTS.DIRECT_MESSAGES)
 
-local function on_ready(bot_client, event)
+local function on_ready(_, event)
     local user = event.user
-    if user ~= nil and user.username ~= nil then
-        print(string.format("bot ready: %s", ffi.string(user.username)))
-    else
-        print("bot ready!")
-    end
+    local name = user ~= nil and user.username ~= nil and ffi_string(user.username) or "unknown"
+    print(format("[ready] logged in as %s", name))
 
     if guild_id > 0 then
-        slashcmds.register(discord, bot_client, guild_id)
-        print("slash commands registered")
+        slashcmds.register(discord, client, guild_id)
+        print("[ready] slash commands registered")
     end
 end
 
-local function on_message(bot_client, message)
-    if message == nil then return end
-    if message.author == nil then return end
-    if message.author.bot then return end
-    if message.content == nil then return end
+local function on_message(_, msg)
+    if msg == nil or msg.author == nil or msg.author.bot or msg.content == nil then return end
 
-    local ok, content = pcall(ffi.string, message.content)
-    if not ok then return end
+    local ok, content = pcall(ffi_string, msg.content)
+    if not ok or sub(content, 1, prefix_len) ~= prefix then return end
 
-    if content:sub(1, #config.prefix) == config.prefix then
-        local cmdname = content:sub(#config.prefix + 1):match("^%S+")
-        if cmdname then
-            local args = content:sub(#config.prefix + #cmdname + 2)
-            commands.handle(discord, bot_client, message, cmdname, args)
-        end
+    local cmdname = match(content, "^%S+", prefix_len + 1)
+    if cmdname then
+        commands.handle(discord, client, msg, cmdname, sub(content, prefix_len + #cmdname + 2))
     end
 end
 
-local function on_interaction(bot_client, interaction)
-    if interaction == nil then return end
-    if interaction.type == 2 then
-        slashcmds.handle(discord, bot_client, interaction)
+local function on_interaction(_, interaction)
+    if interaction ~= nil and interaction.type == 2 then
+        slashcmds.handle(discord, client, interaction)
     end
 end
 
-local ready_callback = ffi.cast("void(*)(struct discord*, const struct discord_ready*)", on_ready)
-local message_callback = ffi.cast("void(*)(struct discord*, const struct discord_message*)", on_message)
-local interaction_callback = ffi.cast("void(*)(struct discord*, const struct discord_interaction*)", on_interaction)
+local cb_ready = ffi_cast("void(*)(struct discord*, const struct discord_ready*)", on_ready)
+local cb_message = ffi_cast("void(*)(struct discord*, const struct discord_message*)", on_message)
+local cb_interaction = ffi_cast("void(*)(struct discord*, const struct discord_interaction*)", on_interaction)
 
-discord.on_ready(client, ready_callback)
-discord.on_message(client, message_callback)
-discord.on_interaction(client, interaction_callback)
+discord.on_ready(client, cb_ready)
+discord.on_message(client, cb_message)
+discord.on_interaction(client, cb_interaction)
 
-print("starting bot...")
+local refs = { cb_ready, cb_message, cb_interaction }
 
-local callbacks = {ready_callback, message_callback, interaction_callback}
-
+print("[init] starting bot...")
 discord.run(client)
 discord.cleanup(client)
