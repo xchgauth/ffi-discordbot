@@ -2,10 +2,10 @@ local ffi = require("ffi")
 local config = require("src.config")
 
 ffi.cdef[[
+
 typedef uint64_t u64snowflake;
 typedef uint64_t u64unix_ms;
 typedef uint64_t u64bitmask;
-
 typedef struct discord discord;
 
 struct discord_user {
@@ -115,6 +115,16 @@ struct discord_interaction {
     char *guild_locale;
 };
 
+struct discord_interaction_data {
+    u64snowflake id;
+    char *name;
+    int type;
+    void *resolved;
+    void *options;
+    u64snowflake guild_id;
+    u64snowflake target_id;
+};
+
 struct discord_create_message {
     char *content;
     char *nonce;
@@ -156,108 +166,108 @@ struct discord_create_guild_application_command {
     int type;
 };
 
-struct discord_interaction_data {
-    u64snowflake id;
-    char *name;
-    int type;
-    void *resolved;
-    void *options;
-    u64snowflake guild_id;
-    u64snowflake target_id;
-};
-
 discord* discord_init(const char *token);
 void discord_cleanup(discord *client);
 void discord_run(discord *client);
 void discord_add_intents(struct discord *client, uint64_t code);
 
-void discord_set_on_ready(struct discord *client, void (*callback)(struct discord *client, const struct discord_ready *event));
-void discord_set_on_message_create(struct discord *client, void (*callback)(struct discord *client, const struct discord_message *event));
-void discord_set_on_interaction_create(struct discord *client, void (*callback)(struct discord *client, const struct discord_interaction *event));
+void discord_set_on_ready(struct discord *client, 
+    void (*callback)(struct discord *client, const struct discord_ready *event));
+void discord_set_on_message_create(struct discord *client, 
+    void (*callback)(struct discord *client, const struct discord_message *event));
+void discord_set_on_interaction_create(struct discord *client, 
+    void (*callback)(struct discord *client, const struct discord_interaction *event));
 
-void discord_create_message(struct discord *client, u64snowflake channel_id, struct discord_create_message *params, void *ret);
-void discord_create_interaction_response(struct discord *client, u64snowflake interaction_id, const char *interaction_token, struct discord_interaction_response *params, void *ret);
-void discord_create_guild_application_command(struct discord *client, u64snowflake guild_id, struct discord_create_guild_application_command *params, void *ret);
+void discord_create_message(struct discord *client, u64snowflake channel_id, 
+    struct discord_create_message *params, void *ret);
+void discord_create_interaction_response(struct discord *client, u64snowflake interaction_id, 
+    const char *interaction_token, struct discord_interaction_response *params, void *ret);
+void discord_create_guild_application_command(struct discord *client, u64snowflake guild_id, 
+    struct discord_create_guild_application_command *params, void *ret);
+
 ]]
 
-local libpath = config.libpath
-local concord = ffi.load(libpath)
+local lib = ffi.load(config.libpath)
 
 local discord = {}
 
+discord.INTENTS = {
+    GUILDS                   = 0x00001,
+    GUILD_MEMBERS            = 0x00002,
+    GUILD_MODERATION         = 0x00004,
+    GUILD_EMOJIS_AND_STICKERS = 0x00008,
+    GUILD_INTEGRATIONS       = 0x00010,
+    GUILD_WEBHOOKS           = 0x00020,
+    GUILD_INVITES            = 0x00040,
+    GUILD_VOICE_STATES       = 0x00080,
+    GUILD_PRESENCES          = 0x00100,
+    GUILD_MESSAGES           = 0x00200,
+    GUILD_MESSAGE_REACTIONS  = 0x00400,
+    GUILD_MESSAGE_TYPING     = 0x00800,
+    DIRECT_MESSAGES          = 0x01000,
+    DIRECT_MESSAGE_REACTIONS = 0x02000,
+    DIRECT_MESSAGE_TYPING    = 0x04000,
+    MESSAGE_CONTENT          = 0x08000,
+    GUILD_SCHEDULED_EVENTS   = 0x10000,
+}
+
 function discord.init(token)
-    return concord.discord_init(token)
+    return lib.discord_init(token)
 end
 
 function discord.cleanup(client)
-    concord.discord_cleanup(client)
+    lib.discord_cleanup(client)
 end
 
 function discord.run(client)
-    concord.discord_run(client)
+    lib.discord_run(client)
 end
 
 function discord.add_intents(client, code)
-    concord.discord_add_intents(client, code)
+    lib.discord_add_intents(client, code)
 end
 
-discord.INTENTS = {
-    GUILDS = 1,
-    GUILD_MEMBERS = 2,
-    GUILD_MODERATION = 4,
-    GUILD_EMOJIS_AND_STICKERS = 8,
-    GUILD_INTEGRATIONS = 16,
-    GUILD_WEBHOOKS = 32,
-    GUILD_INVITES = 64,
-    GUILD_VOICE_STATES = 128,
-    GUILD_PRESENCES = 256,
-    GUILD_MESSAGES = 512,
-    GUILD_MESSAGE_REACTIONS = 1024,
-    GUILD_MESSAGE_TYPING = 2048,
-    DIRECT_MESSAGES = 4096,
-    DIRECT_MESSAGE_REACTIONS = 8192,
-    DIRECT_MESSAGE_TYPING = 16384,
-    MESSAGE_CONTENT = 32768,
-    GUILD_SCHEDULED_EVENTS = 65536,
-}
-
 function discord.on_ready(client, callback)
-    concord.discord_set_on_ready(client, callback)
+    lib.discord_set_on_ready(client, callback)
 end
 
 function discord.on_message(client, callback)
-    concord.discord_set_on_message_create(client, callback)
+    lib.discord_set_on_message_create(client, callback)
 end
 
 function discord.on_interaction(client, callback)
-    concord.discord_set_on_interaction_create(client, callback)
+    lib.discord_set_on_interaction_create(client, callback)
 end
 
 function discord.send_message(client, channel_id, content)
     local msg = ffi.new("struct discord_create_message")
-    local content_buf = ffi.new("char[?]", #content + 1, content)
-    msg.content = content_buf
-    concord.discord_create_message(client, channel_id, msg, nil)
+    local buf = ffi.new("char[?]", #content + 1, content)
+    msg.content = buf
+    lib.discord_create_message(client, channel_id, msg, nil)
 end
 
 function discord.reply_interaction(client, interaction_id, token, content)
     local response = ffi.new("struct discord_interaction_response")
     local data = ffi.new("struct discord_interaction_callback_data")
-    local content_buf = ffi.new("char[?]", #content + 1, content)
-    data.content = content_buf
+    local buf = ffi.new("char[?]", #content + 1, content)
+    
+    data.content = buf
     response.type = 4
     response.data = data
-    concord.discord_create_interaction_response(client, interaction_id, token, response, nil)
+    
+    lib.discord_create_interaction_response(client, interaction_id, token, response, nil)
 end
 
 function discord.create_slash_command(client, guild_id, name, description)
     local cmd = ffi.new("struct discord_create_guild_application_command")
     local name_buf = ffi.new("char[?]", #name + 1, name)
     local desc_buf = ffi.new("char[?]", #description + 1, description)
+    
     cmd.name = name_buf
     cmd.description = desc_buf
     cmd.type = 1
-    concord.discord_create_guild_application_command(client, guild_id, cmd, nil)
+    
+    lib.discord_create_guild_application_command(client, guild_id, cmd, nil)
 end
 
 return discord
