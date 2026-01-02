@@ -1,11 +1,30 @@
 local ffi = require("ffi")
-local socket = require("socket")
-local http = require("socket.http")
+
+ffi.cdef[[
+    typedef struct timespec {
+        long tv_sec;
+        long tv_nsec;
+    } timespec;
+    int clock_gettime(int clk_id, struct timespec *tp);
+]]
+
+local CLOCK_MONOTONIC = jit.os == "Linux" and 1 or 6
+
+local function gettime()
+    local ts = ffi.new("timespec")
+    ffi.C.clock_gettime(CLOCK_MONOTONIC, ts)
+    return tonumber(ts.tv_sec) + tonumber(ts.tv_nsec) / 1e9
+end
+
+local function measure_ping()
+    local t1 = gettime()
+    os.execute("curl -s -o /dev/null https://discord.com/api/v10/gateway")
+    return (gettime() - t1) * 1000
+end
 
 local ffi_string, ffi_cast = ffi.string, ffi.cast
 local pairs, pcall, format, concat = pairs, pcall, string.format, table.concat
 local clock, collectgarbage = os.clock, collectgarbage
-local gettime = socket.gettime
 
 local slashcmds = {}
 
@@ -23,11 +42,8 @@ slashcmds.list = {
     ping = {
         description = "test bot response",
         handler = function(discord, client, interaction)
-            local t1 = gettime()
-            http.request("https://discord.com/api/v10/gateway")
-            local ms = (gettime() - t1) * 1000
-
-            reply(discord, client, interaction, format("**pong!** `%.2fms` (REST)", ms))
+            local ms = measure_ping()
+            reply(discord, client, interaction, format("🏓 **pong!** `%.2fms` (REST)", ms))
             print(format("[ping] %.2fms", ms))
         end
     },
