@@ -1,8 +1,22 @@
 local ffi = require("ffi")
-local socket = require("socket")
+
+ffi.cdef[[
+    typedef struct timespec {
+        long tv_sec;
+        long tv_nsec;
+    } timespec;
+    int clock_gettime(int clk_id, struct timespec *tp);
+]]
+
+local CLOCK_MONOTONIC = jit.os == "Linux" and 1 or 6
+
+local function gettime()
+    local ts = ffi.new("timespec")
+    ffi.C.clock_gettime(CLOCK_MONOTONIC, ts)
+    return tonumber(ts.tv_sec) + tonumber(ts.tv_nsec) / 1e9
+end
 
 local floor, format, clock, concat = math.floor, string.format, os.clock, table.concat
-local gettime = socket.gettime
 local collectgarbage, pairs, pcall, tostring = collectgarbage, pairs, pcall, tostring
 local gsub, sub, match = string.gsub, string.sub, string.match
 
