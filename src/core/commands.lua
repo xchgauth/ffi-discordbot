@@ -1,6 +1,8 @@
 local ffi = require("ffi")
+local socket = require("socket")
 
 local floor, format, clock, concat = math.floor, string.format, os.clock, table.concat
+local gettime = socket.gettime
 local collectgarbage, pairs, pcall, tostring = collectgarbage, pairs, pcall, tostring
 local gsub, sub, match = string.gsub, string.sub, string.match
 
@@ -42,9 +44,12 @@ local function bar(val, max, width)
 end
 
 registry.ping = function(discord, client, msg)
-    local t = clock()
-    send(discord, client, msg, "pong!")
-    print(format("[ping] %.2fms", (clock() - t) * 1000))
+    local t1 = gettime()
+    discord.send_message(client, msg.channel_id, "pong!")
+    local ms = (gettime() - t1) * 1000
+
+    send(discord, client, msg, format(" `%.2fms` (REST)", ms))
+    print(format("[ping] %.2fms", ms))
 end
 
 registry.echo = function(discord, client, msg, args)
