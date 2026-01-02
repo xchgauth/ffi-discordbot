@@ -1,8 +1,11 @@
 local ffi = require("ffi")
+local socket = require("socket")
+local http = require("socket.http")
 
 local ffi_string, ffi_cast = ffi.string, ffi.cast
 local pairs, pcall, format, concat = pairs, pcall, string.format, table.concat
 local clock, collectgarbage = os.clock, collectgarbage
+local gettime = socket.gettime
 
 local slashcmds = {}
 
@@ -20,7 +23,12 @@ slashcmds.list = {
     ping = {
         description = "test bot response",
         handler = function(discord, client, interaction)
-            reply(discord, client, interaction, "pong!")
+            local t1 = gettime()
+            http.request("https://discord.com/api/v10/gateway")
+            local ms = (gettime() - t1) * 1000
+
+            reply(discord, client, interaction, format("**pong!** `%.2fms` (REST)", ms))
+            print(format("[ping] %.2fms", ms))
         end
     },
 
