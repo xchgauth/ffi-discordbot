@@ -1,5 +1,5 @@
 local ffi = require("ffi")
-local config = require("init.config")
+local config = require("config")
 
 ffi.cdef[[
 
