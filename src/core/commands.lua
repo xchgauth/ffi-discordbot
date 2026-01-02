@@ -16,6 +16,12 @@ local function gettime()
     return tonumber(ts.tv_sec) + tonumber(ts.tv_nsec) / 1e9
 end
 
+local function measure_ping()
+    local t1 = gettime()
+    os.execute("curl -s -o /dev/null https://discord.com/api/v10/gateway")
+    return (gettime() - t1) * 1000
+end
+
 local floor, format, clock, concat = math.floor, string.format, os.clock, table.concat
 local collectgarbage, pairs, pcall, tostring = collectgarbage, pairs, pcall, tostring
 local gsub, sub, match = string.gsub, string.sub, string.match
@@ -58,11 +64,8 @@ local function bar(val, max, width)
 end
 
 registry.ping = function(discord, client, msg)
-    local t1 = gettime()
-    discord.send_message(client, msg.channel_id, "pong!")
-    local ms = (gettime() - t1) * 1000
-
-    send(discord, client, msg, format(" `%.2fms` (REST)", ms))
+    local ms = measure_ping()
+    send(discord, client, msg, format("**pong!** `%.2fms` (REST)", ms))
     print(format("[ping] %.2fms", ms))
 end
 
