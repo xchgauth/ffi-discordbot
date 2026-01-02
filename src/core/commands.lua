@@ -2,10 +2,12 @@ local ffi = require("ffi")
 
 local floor, format, clock, concat = math.floor, string.format, os.clock, table.concat
 local collectgarbage, pairs, pcall, tostring = collectgarbage, pairs, pcall, tostring
+local gsub, sub, match = string.gsub, string.sub, string.match
 
 local commands = {}
 local registry = {}
 local start_time = clock()
+local PREFIX = "!"
 
 local function send(discord, client, msg, content)
     discord.send_message(client, msg.channel_id, content)
@@ -46,7 +48,14 @@ registry.ping = function(discord, client, msg)
 end
 
 registry.echo = function(discord, client, msg, args)
-    if #args > 0 then send(discord, client, msg, args) end
+    if #args == 0 then return end
+    if sub(args, 1, 1) == PREFIX then return end
+    local sanitized = gsub(args, "@", "@ ")
+    sanitized = gsub(sanitized, "<@!?%d+>", "[mention]")
+    sanitized = gsub(sanitized, "<@&%d+>", "[role]")
+    sanitized = gsub(sanitized, "@everyone", "[everyone]")
+    sanitized = gsub(sanitized, "@here", "[here]")
+    send(discord, client, msg, sanitized)
 end
 
 registry.help = function(discord, client, msg)
@@ -58,11 +67,10 @@ end
 
 registry.info = function(discord, client, msg)
     send(discord, client, msg, concat({
-        "**dcbot** - discord bot in luajit",
+        "**dcbot** - discord bot",
         "",
-        "**runtime:** luajit 2.1 + ffi",
-        "**library:** concord (c99)",
-        "**source:** github.com/cogmasters/concord"
+        "**runtime:** luajit 2.1",
+        "**library:** ffi binding to c99",
     }, "\n"))
 end
 
