@@ -1,6 +1,6 @@
 local ffi = require("ffi")
 local discord = require("ffi.lib")
-local config = require("init.config")
+local config = require("config")
 local commands = require("core.commands")
 local slashcmds = require("core.slashcmds")
 
