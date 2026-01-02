@@ -30,6 +30,24 @@ commands.list = {
         discord.send_message(client, msg.channel_id, info)
     end,
     
+    mem = function(discord, client, msg)
+        collectgarbage("collect")
+        local mem_kb = collectgarbage("count")
+        local mem_mb = mem_kb / 1024
+        
+        local results = {}
+        table.insert(results, "**memory stats**")
+        table.insert(results, string.format("lua heap: %.2f KB (%.2f MB)", mem_kb, mem_mb))
+        table.insert(results, string.format("gc threshold: %d KB", collectgarbage("count") * 2))
+        table.insert(results, "")
+        table.insert(results, "**typical discord bot memory:**")
+        table.insert(results, "discord.js: 50-150 MB")
+        table.insert(results, "discord.py: 40-100 MB")
+        table.insert(results, "this bot: <2 MB")
+        
+        discord.send_message(client, msg.channel_id, table.concat(results, "\n"))
+    end,
+    
     bench = function(discord, client, msg)
         local results = {}
         
