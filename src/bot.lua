@@ -45,5 +45,8 @@ discord.on_message(client, message_callback)
 discord.on_interaction(client, interaction_callback)
 
 print("starting bot...")
+
+local callbacks = {ready_callback, message_callback, interaction_callback}
+
 discord.run(client)
 discord.cleanup(client)
