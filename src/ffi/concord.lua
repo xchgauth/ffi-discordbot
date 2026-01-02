@@ -169,6 +169,7 @@ struct discord_interaction_data {
 discord* discord_init(const char *token);
 void discord_cleanup(discord *client);
 void discord_run(discord *client);
+void discord_add_intents(struct discord *client, uint64_t code);
 
 void discord_set_on_ready(struct discord *client, void (*callback)(struct discord *client, const struct discord_ready *event));
 void discord_set_on_message_create(struct discord *client, void (*callback)(struct discord *client, const struct discord_message *event));
@@ -195,6 +196,30 @@ end
 function discord.run(client)
     concord.discord_run(client)
 end
+
+function discord.add_intents(client, code)
+    concord.discord_add_intents(client, code)
+end
+
+discord.INTENTS = {
+    GUILDS = 1,
+    GUILD_MEMBERS = 2,
+    GUILD_MODERATION = 4,
+    GUILD_EMOJIS_AND_STICKERS = 8,
+    GUILD_INTEGRATIONS = 16,
+    GUILD_WEBHOOKS = 32,
+    GUILD_INVITES = 64,
+    GUILD_VOICE_STATES = 128,
+    GUILD_PRESENCES = 256,
+    GUILD_MESSAGES = 512,
+    GUILD_MESSAGE_REACTIONS = 1024,
+    GUILD_MESSAGE_TYPING = 2048,
+    DIRECT_MESSAGES = 4096,
+    DIRECT_MESSAGE_REACTIONS = 8192,
+    DIRECT_MESSAGE_TYPING = 16384,
+    MESSAGE_CONTENT = 32768,
+    GUILD_SCHEDULED_EVENTS = 65536,
+}
 
 function discord.on_ready(client, callback)
     concord.discord_set_on_ready(client, callback)
