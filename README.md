@@ -8,7 +8,6 @@ a minimal discord bot using luajit ffi bindings to concord c library
 dcbot/
 ├── main.lua              # entry point
 ├── install.sh            # installs concord from github
-├── setup.txt             # vps setup instructions
 ├── src/
 │   ├── bot.lua           # main bot logic
 │   ├── config.lua        # configuration
@@ -22,7 +21,7 @@ dcbot/
 
 - **luajit** - lua runtime with jit compilation
 - **ffi** - foreign function interface to call c code from lua
-- **concord** - c library for discord api (we call it via ffi)
+- **concord** - c library for discord api (called via ffi)
 - **our code** - pure lua using ffi bindings
 
 ## installation
@@ -48,7 +47,3 @@ the install script downloads only essential files from concord dev branch and co
 - `/ping` - test bot response
 - `/info` - bot information
 - `/help` - list all commands
-
-## vps deployment
-
-see `setup.txt` for full vps setup instructions
