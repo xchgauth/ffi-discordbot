@@ -7,9 +7,18 @@ local slashcmds = require("src.slashcmds")
 local client = discord.init(config.token)
 local guild_id = tonumber(os.getenv("GUILD_ID")) or 0
 
+discord.add_intents(client, discord.INTENTS.GUILDS)
+discord.add_intents(client, discord.INTENTS.GUILD_MESSAGES)
+discord.add_intents(client, discord.INTENTS.MESSAGE_CONTENT)
+discord.add_intents(client, discord.INTENTS.DIRECT_MESSAGES)
+
 local function on_ready(bot_client, event)
-    local app = event.application
-    print(string.format("bot ready: %s (%llu)", app.name, tonumber(app.id)))
+    local user = event.user
+    if user ~= nil and user.username ~= nil then
+        print(string.format("bot ready: %s", ffi.string(user.username)))
+    else
+        print("bot ready!")
+    end
     
     if guild_id > 0 then
         slashcmds.register(discord, bot_client, guild_id)
@@ -18,27 +27,36 @@ local function on_ready(bot_client, event)
 end
 
 local function on_message(bot_client, message)
+    if message == nil then print("[debug] message is nil") return end
+    if message.author == nil then print("[debug] author is nil") return end
     if message.author.bot then return end
+    if message.content == nil then print("[debug] content is nil") return end
     
-    local content = ffi.string(message.content)
+    local ok, content = pcall(ffi.string, message.content)
+    if not ok then print("[debug] failed to get content: " .. tostring(content)) return end
+    
+    print("[debug] received: " .. content)
     
     if content:sub(1, #config.prefix) == config.prefix then
         local cmdname = content:sub(#config.prefix + 1):match("^%S+")
-        local args = content:sub(#config.prefix + #cmdname + 2)
-        
-        commands.handle(discord, bot_client, message, cmdname, args)
+        if cmdname then
+            print("[debug] running command: " .. cmdname)
+            local args = content:sub(#config.prefix + #cmdname + 2)
+            commands.handle(discord, bot_client, message, cmdname, args)
+        end
     end
 end
 
 local function on_interaction(bot_client, interaction)
+    if interaction == nil then return end
     if interaction.type == 2 then
         slashcmds.handle(discord, bot_client, interaction)
     end
 end
 
-local ready_callback = ffi.cast("void(*)(discord*, const struct discord_ready*)", on_ready)
-local message_callback = ffi.cast("void(*)(discord*, const struct discord_message*)", on_message)
-local interaction_callback = ffi.cast("void(*)(discord*, const struct discord_interaction*)", on_interaction)
+local ready_callback = ffi.cast("void(*)(struct discord*, const struct discord_ready*)", on_ready)
+local message_callback = ffi.cast("void(*)(struct discord*, const struct discord_message*)", on_message)
+local interaction_callback = ffi.cast("void(*)(struct discord*, const struct discord_interaction*)", on_interaction)
 
 discord.on_ready(client, ready_callback)
 discord.on_message(client, message_callback)
