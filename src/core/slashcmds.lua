@@ -1,12 +1,12 @@
 local ffi = require("ffi")
 
-ffi.cdef[[
+pcall(ffi.cdef, [[
     typedef struct timespec {
         long tv_sec;
         long tv_nsec;
     } timespec;
     int clock_gettime(int clk_id, struct timespec *tp);
-]]
+]])
 
 local CLOCK_MONOTONIC = jit.os == "Linux" and 1 or 6
 
