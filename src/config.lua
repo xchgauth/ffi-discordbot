@@ -5,4 +5,3 @@ config.prefix = "!"
 config.libpath = "./lib/lib/libdiscord.so"
 
 return config
-.. fr
